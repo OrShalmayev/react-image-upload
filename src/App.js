@@ -240,7 +240,7 @@ function Upload (){
             appState.setContextState(({
                 uploading: false,
                 isUploaded: true,
-                uploadedFileName: `${window.location.origin}/build/assets/images/${res.data}`,
+                uploadedFileName: `${window.location.origin}/assets/images/${res.data}`,
                 error: null
             }));
           }, 1000);
@@ -284,7 +284,7 @@ function Upload (){
             appState.setContextState(({
                 uploading: false,
                 isUploaded: true,
-                uploadedFileName: `${window.location.origin}/build/assets/images/${res.data}`,
+                uploadedFileName: `${window.location.origin}/assets/images/${res.data}`,
                 error: null
             }));
           }, 1000);
