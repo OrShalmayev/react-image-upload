@@ -154,6 +154,9 @@ function Upload (){
       dropRef.current.addEventListener('dragleave', handleDragOut);
       dropRef.current.addEventListener('dragover', handleDragOver);
       dropRef.current.addEventListener('drop', handleDrop);
+      console.log('process.env.REACT_APP_PRODUCTION',process.env.REACT_APP_PRODUCTION);
+
+
       // Component will unmount
       return () => {
         // remove listeners
@@ -169,12 +172,12 @@ function Upload (){
       console.log('files updated', appState.file)
     },[appState.file])
   
-      // Styles
-      const main = useStyles();
-  
+    // Styles
+    const main = useStyles();
+    const baseURL = (process.env.REACT_APP_PRODUCTION===true) ? window.location.origin : 'http://localhost:8000';
     // Axios
     const client = axios.create({
-      baseURL: window.location.origin,
+      baseURL,
       timeout: 20000
     })
     /**
@@ -237,7 +240,7 @@ function Upload (){
             appState.setContextState(({
                 uploading: false,
                 isUploaded: true,
-                uploadedFileName: `${window.location.origin}/assets/images/${res.data}`,
+                uploadedFileName: `${window.location.origin}/build/assets/images/${res.data}`,
                 error: null
             }));
           }, 1000);
@@ -258,18 +261,72 @@ function Upload (){
         }));//END setState
       }
     }
+
+    const onFileInputChange = (e) => {
+      console.log('onFileInputChange E***',e)
+      if (e.target.files && e.target.files.length > 0) {
+        const formData = new FormData();
+        formData.append('myImage', e.target.files[0]);
+        appState.setContextState(({
+          uploading: true
+        }));
+        // send to the server the img file
+        client.post('/upload', formData, {
+          config,
+          onUploadProgress: function(progressEvent) {
+            console.log('progressEvent', progressEvent);
+            var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            console.log('percentCompleted', percentCompleted);
+          }
+        }).then(res=>{
+          console.log('response:****', res.data)
+          setTimeout(()=>{
+            appState.setContextState(({
+                uploading: false,
+                isUploaded: true,
+                uploadedFileName: `${window.location.origin}/build/assets/images/${res.data}`,
+                error: null
+            }));
+          }, 1000);
+        }).catch(err=> {
+            appState.setContextState(({
+                uploading: false,
+                error: true
+            }));
+            console.log(new Error(err));
+        });
+        dragCounter = 0
+        appState.setContextState(({
+            dragging: false,
+            uploading: true,
+            file: e.target.files[0],
+            error: null
+        }));//END setState
+      }
+    }
   return (
     <React.Fragment>
       <Box className="App">
         <Container className={main.container}>
-          <Typography className={`${main.p}--1`} paragraph="true">Upload your image</Typography>
+          <Typography className={`${main.h}--1`} paragraph="true">Upload your image</Typography>
+          <Typography className={`${main.p}--1`} paragraph="true">File should be Jpeg, Png</Typography>
           <Box className={`${main.upload} ${appState.dragging ? 'active' : ''}`} ref={dropRef}>
             <img className={`${main.upload}-img`} src={image} alt="mountains"/>
-            <Typography className={`${main.p}--2`} paragraph="true">File should be Jpeg, Png</Typography>
+            <Typography className={`${main.p}--2`} paragraph="true">Drag & Drop your image</Typography>
           </Box>
-          <Button className={main.choose_file} variant="contained" color="primary">
-            Choose a file
-          </Button>
+          <input
+            onChange={(e)=> onFileInputChange(e)}
+            accept="image/*"
+            style={{ display: 'none' }}
+            id="raised-button-file"
+            multiple
+            type="file"
+          />
+          <label htmlFor="raised-button-file">
+            <Button className={main.choose_file} variant="contained" color="primary" component="span">
+              Choose a file
+            </Button>
+          </label> 
         </Container>
       </Box>
     </React.Fragment>
@@ -285,14 +342,10 @@ function UploadedSuccessfully(){
     <React.Fragment>
       <Box className="App">
         <Container className={main.container}>
-          <Typography className={`${main.p}--1`} paragraph="true">Uploaded Successfully</Typography>
+          <Typography className={`${main.h}--1`} paragraph="true">Uploaded Successfully</Typography>
           <Box className={`${main.upload}`}>
             <img className={`${main.upload}-img`} src={`${appState.uploadedFileName}`} alt="mountains"/>
-            <Typography className={`${main.p}--2`} paragraph="true">File should be Jpeg, Png</Typography>
           </Box>
-          <Button className={main.choose_file} variant="contained" color="primary">
-            Choose a file
-          </Button>
         </Container>
       </Box>
     </React.Fragment>
@@ -309,6 +362,6 @@ App.Main = Main;
 App.Upload = Upload;
 App.UploadedSuccessfully = UploadedSuccessfully;
 App.Loading = Loading;
-App.Error = Upload;
+App.Error = Error;
 
 export default App;
